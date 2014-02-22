@@ -20,10 +20,10 @@ func GetAlbums(r *http.Request, enc Encoder, db DB) string {
 	}
 	if band != "" || title != "" || yri != 0 {
 		// At least one filter, use Find()
-		return Must(enc.Encode(toIface(db.Find(band, title, yri))...))
+		return Must(enc(toIface(db.Find(band, title, yri))...))
 	}
 	// Otherwise, return all albums
-	return Must(enc.Encode(toIface(db.GetAll())...))
+	return Must(enc(toIface(db.GetAll())...))
 }
 
 // GetAlbum returns the requested album.
@@ -32,10 +32,10 @@ func GetAlbum(enc Encoder, db DB, parms martini.Params) (int, string) {
 	al := db.Get(id)
 	if err != nil || al == nil {
 		// Invalid id, or does not exist
-		return http.StatusNotFound, Must(enc.Encode(
+		return http.StatusNotFound, Must(enc(
 			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
 	}
-	return http.StatusOK, Must(enc.Encode(al))
+	return http.StatusOK, Must(enc(al))
 }
 
 // AddAlbum creates the posted album.
@@ -45,12 +45,12 @@ func AddAlbum(w http.ResponseWriter, r *http.Request, enc Encoder, db DB) (int, 
 	switch err {
 	case ErrAlreadyExists:
 		// Duplicate
-		return http.StatusConflict, Must(enc.Encode(
+		return http.StatusConflict, Must(enc(
 			NewError(ErrCodeAlreadyExists, fmt.Sprintf("the album '%s' from '%s' already exists", al.Title, al.Band))))
 	case nil:
 		// TODO : Location is expected to be an absolute URI, as per the RFC2616
 		w.Header().Set("Location", fmt.Sprintf("/albums/%d", id))
-		return http.StatusCreated, Must(enc.Encode(al))
+		return http.StatusCreated, Must(enc(al))
 	default:
 		panic(err)
 	}
@@ -61,16 +61,16 @@ func UpdateAlbum(r *http.Request, enc Encoder, db DB, parms martini.Params) (int
 	al, err := getPutAlbum(r, parms)
 	if err != nil {
 		// Invalid id, 404
-		return http.StatusNotFound, Must(enc.Encode(
+		return http.StatusNotFound, Must(enc(
 			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
 	}
 	err = db.Update(al)
 	switch err {
 	case ErrAlreadyExists:
-		return http.StatusConflict, Must(enc.Encode(
+		return http.StatusConflict, Must(enc(
 			NewError(ErrCodeAlreadyExists, fmt.Sprintf("the album '%s' from '%s' already exists", al.Title, al.Band))))
 	case nil:
-		return http.StatusOK, Must(enc.Encode(al))
+		return http.StatusOK, Must(enc(al))
 	default:
 		panic(err)
 	}
@@ -110,7 +110,7 @@ func DeleteAlbum(enc Encoder, db DB, parms martini.Params) (int, string) {
 	id, err := strconv.Atoi(parms["id"])
 	al := db.Get(id)
 	if err != nil || al == nil {
-		return http.StatusNotFound, Must(enc.Encode(
+		return http.StatusNotFound, Must(enc(
 			NewError(ErrCodeNotExist, fmt.Sprintf("the album with id %s does not exist", parms["id"]))))
 	}
 	db.Delete(id)
